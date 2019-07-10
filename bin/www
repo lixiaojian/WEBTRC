@@ -1,0 +1,187 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('webrtc:server');
+// var http = require('http');
+var https = require('https');
+var fs = require('fs');
+const uuidv4 = require('uuid/v4');
+
+// var privatekey = fs.readFileSync('../rtc-p2p/bin/server.key', 'utf8');
+// var certificate = fs.readFileSync('../rtc-p2p/bin/server.crt', 'utf8');
+var privatekey = fs.readFileSync('./bin/server.key', 'utf8');
+var certificate = fs.readFileSync('./bin/server.crt', 'utf8');
+var options={key:privatekey, cert:certificate};
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '8877');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = https.createServer(options, app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+const io = require('socket.io')(server);
+io.on('connection', socket => {
+  console.log('有用户连接进来');
+
+  /**
+   * 加入房间
+   */
+  socket.on('joinRoom', (data, callBack) =>{
+    const {roomId, userName} = data;
+    //将用户加入到房间内
+    socket.join(roomId,() => {
+      const userId = socket.id;
+      //获取房间内的所有用户
+      socket.adapter.rooms[roomId].sockets[socket.id] = {
+        userId:socket.id,
+        userName,
+        streams:[]
+      };
+      const users = socket.adapter.rooms[roomId].sockets;
+      //向房间内的用户广播有用户加入
+      socket.to(roomId).emit('userJoin',{userId,users});
+      //响应当前用户
+      callBack({code:0, data:{roomId,userId, users}, msg:'success'});
+    });
+  });
+
+  /**
+   * 用户发布流
+   */
+  socket.on('publish',(roomId, callback) => {
+    const streamId = uuidv4();
+    //获取房间内的所有用户
+    const users = socket.adapter.rooms[roomId].sockets;
+    //记录下用户的流id
+    const userInfo = users[socket.id];
+    if(userInfo){
+      if(!userInfo.streams){
+        userInfo.streams = [];
+      }
+      userInfo.streams.push(streamId);
+      socket.to(roomId).emit('streamAdd',{userId:socket.id, userName:userInfo.userName, streamId});
+    }
+    //向用户返回流ID
+    callback({code:0,data:{streamId},msg:'success'});
+  })
+
+  //接收一个offer信令
+  socket.on('offer', (data, callback) => {
+    const {peerId, userId, streamId, sessionDesc} = data;
+    //将offer发送给指定的用户
+    socket.broadcast.to(userId).emit('receiveOffer', {userId:socket.id, peerId, streamId, sessionDesc});
+    callback({code:0,data:null,msg:'success'});
+  });
+
+  //接收一个answer信令
+  socket.on('anwser', (data, callback) => {
+    const {peerId, userId, streamId, sessionDesc} = data;
+    //将anwser发送给指定的用户
+    socket.broadcast.to(userId).emit('receiveAnswer', {userId:socket.id, peerId, streamId, sessionDesc});
+    callback({code:0,data:null,msg:'success'});
+  });
+  //接收一个candidate信令
+  socket.on('candidate',(data, callback) => {
+    const {peerId, userId, candidate} = data;
+    //将candidate发送给指定的用户
+    socket.broadcast.to(userId).emit('receiveCandidate', { peerId, candidate});
+    callback({code:0,data:null,msg:'success'});
+  });
+
+  socket.on('unpublish', (data,callback) => {
+    const {streamId, roomId} = data;
+    socket.to(roomId).emit('streamRemove',{streamId});
+    callback({code:0,data:null,msg:'success'});
+  })
+  /**
+   * 用户离开
+   */
+  socket.on('disconnect', function(){
+    const userId = socket.id;
+    console.log('有用户连接离开');
+    const roomId = Object.keys(socket.adapter.rooms)[0];
+    if(socket.adapter.rooms[roomId] && socket.adapter.rooms[roomId].sockets[userId]){
+      socket.adapter.rooms[roomId].sockets[userId] = {};
+    }
+    //向房间内的用户广播有用户离开
+    socket.to(roomId).emit('userLeave',{userId});
+  });
+});
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

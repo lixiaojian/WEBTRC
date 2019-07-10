@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/stylesheets/bootstrap.min.css">
+    <link rel="stylesheet" href="/stylesheets/style.css">
+  </head>
+  <body>
+    <h1 id="roomNameSpan" class="text-center"><%= title %></h1>
+    <div class="container-fluid">
+      <div class="button_box">
+        <button id="publish_camera_btn" type="button" disabled class="btn btn-primary">发布媒体</button>
+        <button id="unpublish_camera_btn" type="button" disabled data-type="camera" class="btn btn-primary unpublish_btn" style="display: none">取消媒体发布</button>
+        <button id="publish_screen_btn" type="button" disabled class="btn btn-primary">发布桌面</button>
+        <button id="unpublish_screen_btn" type="button" disabled data-type="screen" class="btn btn-primary unpublish_btn" style="display: none">取消桌面发布</button>
+      </div>
+      <div class="video-box" id="video-box">
+
+      </div>
+    </div>
+
+    <!--    输入会议室名称的弹层-->
+    <div id="input_room_modal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">请选择您要加入的会议室名称</h5>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="form-group row">
+                <label for="colFormLabelSm" class="col-sm-3 col-form-label col-form-label-sm">请选择会议室</label>
+                <div class="col-sm-9">
+                  <select id="room_select" class="form-control">
+                    <option value="room111">醉仙居</option>
+                    <option value="room222">风雅轩</option>
+                    <option value="room333">天涯间</option>
+                    <option value="room444">夜未央</option>
+                    <option value="room555">美丽新世界</option>
+                    <option value="room666">淑娴小憩</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group row">
+                <label for="colFormLabelSm" class="col-sm-3 col-form-label col-form-label-sm">请输入昵称</label>
+                <div class="col-sm-9">
+                  <input id="user_name_input" class="form-control" type="text" placeholder="请输入您的昵称">
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="enter_room_btn" class="btn btn-primary">进入</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!--loadding的弹层-->
+    <div id="loadding_modal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-body">
+            <div id="messageSpan" class="text-center">数据处理中，请稍后！</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 统计图的弹层-->
+    <div id="stats_modal" class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">统计</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="stats_div" style="height: 400px;width: 100%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 信息的提示弹层 -->
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLongTitle">提示信息</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="show_text_span" class="text-center"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">好的</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/javascripts/adapter.min.js"></script>
+    <script src="/javascripts/jquery-3.3.1.slim.min.js"></script>
+    <script src="/javascripts/popper.min.js"></script>
+    <script src="/javascripts/bootstrap.min.js"></script>
+    <script src="/javascripts/echarts.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/javascripts/statUtil.js"></script>
+    <script src="/javascripts/index.js"></script>
+  </body>
+</html>
