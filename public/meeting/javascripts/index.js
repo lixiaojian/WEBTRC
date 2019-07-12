@@ -265,7 +265,7 @@ $(function () {
    * 创建信令的连接
    */
   function createConnect() {
-    socket = io.connect();
+    socket = io();
     socket.on('connect', () => {
       console.log('连接成功');
       /**
@@ -629,7 +629,7 @@ $(function () {
         }
 
         const preImg = document.createElement('img');
-        preImg.src = '/images/empty.png';
+        preImg.src = '/meeting/images/empty.png';
         preImg.className = 'preview-img';
         const cardBody = document.createElement('div');
         cardBody.className = 'card-body';

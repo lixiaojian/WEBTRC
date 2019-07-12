@@ -6,29 +6,29 @@
 
 var app = require('../app');
 var debug = require('debug')('webrtc:server');
-// var http = require('http');
-var https = require('https');
+var http = require('http');
+//var https = require('https');
 var fs = require('fs');
 const uuidv4 = require('uuid/v4');
 
 // var privatekey = fs.readFileSync('../rtc-p2p/bin/server.key', 'utf8');
 // var certificate = fs.readFileSync('../rtc-p2p/bin/server.crt', 'utf8');
-var privatekey = fs.readFileSync('./bin/server.key', 'utf8');
-var certificate = fs.readFileSync('./bin/server.crt', 'utf8');
-var options={key:privatekey, cert:certificate};
+//var privatekey = fs.readFileSync('./bin/server.key', 'utf8');
+//var certificate = fs.readFileSync('./bin/server.crt', 'utf8');
+//var options={key:privatekey, cert:certificate};
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '8877');
+var port = normalizePort(process.env.PORT || '3002');
 app.set('port', port);
 
 /**
  * Create HTTP server.
  */
 
-var server = https.createServer(options, app);
+var server = http.createServer(app);
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -79,6 +79,24 @@ io.on('connection', socket => {
     callback({code:0,data:{streamId},msg:'success'});
   })
 
+  //取消流发布
+  socket.on('unpublish', (data,callback) => {
+    const {streamId, roomId} = data;
+    //获取房间内的所有用户
+    const users = socket.adapter.rooms[roomId].sockets;
+    //当前用户
+    const userInfo = users[socket.id];
+    if(userInfo){
+      const streams = userInfo.streams;
+      if(streams && streams.filter){
+        //过滤掉取消的流
+        userInfo.streams = streams.filter(id => id !== streamId);
+      }
+    }
+    socket.to(roomId).emit('streamRemove',{streamId});
+    callback({code:0,data:null,msg:'success'});
+  })
+
   //接收一个offer信令
   socket.on('offer', (data, callback) => {
     const {peerId, userId, streamId, sessionDesc} = data;
@@ -102,11 +120,6 @@ io.on('connection', socket => {
     callback({code:0,data:null,msg:'success'});
   });
 
-  socket.on('unpublish', (data,callback) => {
-    const {streamId, roomId} = data;
-    socket.to(roomId).emit('streamRemove',{streamId});
-    callback({code:0,data:null,msg:'success'});
-  })
   /**
    * 用户离开
    */
